@@ -2,7 +2,7 @@
 interface BlockState {
   x: number
   y: number
-  revealed?: boolean
+  revealed: boolean
   mine?: boolean
   flagged?: boolean
   adjacentMines: number
@@ -18,21 +18,17 @@ const state = reactive(
         x,
         y,
         adjacentMines: 0,
+        revealed: false,
       }),
 
     )),
 )
 
 function generateMines() {
-  state.forEach((row) => {
-    row.forEach((block) => {
+  for (const row of state) {
+    for (const block of row)
       block.mine = Math.random() < 0.3
-    })
-  })
-  // for (const row of state) {
-  //   for (const block of row)
-  //     block.mine = Math.random() < 0.1
-  // }
+  }
 }
 
 const directions = [
@@ -76,12 +72,19 @@ function updateNumbers() {
   })
 }
 
-function onClick(x: number, y: number) {
-  console.log(`x: ${x} y: ${y}`)
+function onClick(block: BlockState) {
+  block.revealed = true
+
+  if (block.mine) {
+    //
+  }
 }
 
 function getBlockClass(block: BlockState) {
-  return block.mine ? 'text-red' : numberColors[block.adjacentMines]
+  if (!block.revealed)
+    return 'bg-gray-400/10'
+
+  return block.mine ? 'bg-red-500/50' : numberColors[block.adjacentMines]
 }
 
 generateMines()
@@ -100,21 +103,22 @@ updateNumbers()
         items-center justify-center
       >
         <button
-          v-for="item, x in row"
+          v-for="block, x in row"
           :key="x"
           flex="~"
           items-center justify-center
           w-10 h-10 m=".5"
           border="1 gray-400/10"
           hover="bg-gray/10"
-          :class="getBlockClass(item)"
-          @click="onClick(x, y)"
+          :class="getBlockClass(block)"
+          @click="onClick(block)"
         >
-          <!-- {{ item.mine ? 'x' : item.adjacentMines }} -->
-          <div v-if="item.mine" i-mdi-mine />
-          <div v-else>
-            {{ item.adjacentMines }}
-          </div>
+          <template v-if="block.revealed">
+            <div v-if="block.mine" i-mdi-mine />
+            <div v-else>
+              {{ block.adjacentMines }}
+            </div>
+          </template>
         </button>
       </div>
     </div>
