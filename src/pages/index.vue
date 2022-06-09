@@ -24,11 +24,15 @@ const state = reactive(
     )),
 )
 
-function generateMines() {
+function generateMines(initial: BlockState) {
   for (const row of state) {
-    for (const block of row)
+    for (const block of row) {
+      if (Math.abs(initial.x - block.x) <= 1 || Math.abs(initial.y - block.y) <= 1)
+        continue
       block.mine = Math.random() < 0.3
+    }
   }
+  updateNumbers()
 }
 
 const directions = [
@@ -59,36 +63,70 @@ function updateNumbers() {
       if (block.mine)
         return
 
-      directions.forEach(([dx, dy]) => {
-        const x2 = x + dx
-        const y2 = y + dy
-        if (x2 < 0 || x2 >= WIDTH || y2 < 0 || y2 >= HEIGHT)
-          return
-
-        if (state[y2][x2].mine)
+      getSiblings(block).forEach((b) => {
+        if (b.mine)
           block.adjacentMines += 1
       })
     })
   })
 }
 
-function onClick(block: BlockState) {
+function expendZeros(block: BlockState) {
+  if (block.adjacentMines)
+    return
+
+  getSiblings(block).forEach((s) => {
+    if (!s.revealed) {
+      s.revealed = true
+      expendZeros(s)
+    }
+  })
+}
+
+let mineGenerated = false
+const dev = false
+
+function onRightClick(block: BlockState) {
+  if (block.mine)
+    return
+  block.flagged = !block.flagged
+}
+
+function onClick(e: MouseEvent, block: BlockState) {
+  if (!mineGenerated) {
+    generateMines(block)
+    mineGenerated = true
+  }
+
   block.revealed = true
 
   if (block.mine) {
     //
   }
+  expendZeros(block)
 }
 
 function getBlockClass(block: BlockState) {
+  if (block.flagged)
+    return 'bg-gray-500/10'
+
   if (!block.revealed)
-    return 'bg-gray-400/10'
+    return 'bg-gray-500/10 hover:bg-gray-500/20'
 
   return block.mine ? 'bg-red-500/50' : numberColors[block.adjacentMines]
 }
 
-generateMines()
-updateNumbers()
+function getSiblings(block: BlockState) {
+  return directions.map(([dx, dy]) => {
+    const x2 = block.x + dx
+    const y2 = block.y + dy
+    if (x2 < 0 || x2 >= WIDTH || y2 < 0 || y2 >= HEIGHT)
+      return undefined
+
+    return state[y2][x2]
+  }).filter(Boolean) as BlockState
+}
+
 </script>
 
 <template>
@@ -109,11 +147,15 @@ updateNumbers()
           items-center justify-center
           w-10 h-10 m=".5"
           border="1 gray-400/10"
-          hover="bg-gray/10"
           :class="getBlockClass(block)"
-          @click="onClick(block)"
+          @click="onClick($event, block)"
+          @contextmenu.prevent="onRightClick(block)"
         >
-          <template v-if="block.revealed">
+          <template v-if="block.flagged">
+            <div i-mdi-flag text-red />
+          </template>
+
+          <template v-else-if="block.revealed || dev">
             <div v-if="block.mine" i-mdi-mine />
             <div v-else>
               {{ block.adjacentMines }}
