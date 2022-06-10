@@ -87,7 +87,7 @@ let mineGenerated = false
 const dev = false
 
 function onRightClick(block: BlockState) {
-  if (block.mine)
+  if (block.revealed)
     return
   block.flagged = !block.flagged
 }
@@ -100,9 +100,9 @@ function onClick(e: MouseEvent, block: BlockState) {
 
   block.revealed = true
 
-  if (block.mine) {
-    //
-  }
+  if (block.mine)
+    alert('BOOOOM!!!')
+
   expendZeros(block)
 }
 
@@ -127,6 +127,22 @@ function getSiblings(block: BlockState) {
   }).filter(Boolean) as BlockState
 }
 
+watchEffect(checkGameState())
+
+function checkGameState() {
+  if (!mineGenerated)
+    return
+
+  const blocks = state.flat()
+
+  if (blocks.every(block => block.revealed || block.flagged)) {
+    if (blocks.some(block => block.flagged && !block.mine))
+      alert('You cheat!')
+
+    else
+      alert('You win!')
+  }
+}
 </script>
 
 <template>
