@@ -1,12 +1,5 @@
 <script setup lang="ts">
-interface BlockState {
-  x: number
-  y: number
-  revealed: boolean
-  mine?: boolean
-  flagged?: boolean
-  adjacentMines: number
-}
+import type { BlockState } from '~/types'
 
 const WIDTH = 10
 const HEIGHT = 10
